@@ -1,5 +1,5 @@
 package com.prongbang.biometriccram.key
 
-interface CryptographyKey {
+interface KeyStoreAliasKey {
     fun key(): String
 }

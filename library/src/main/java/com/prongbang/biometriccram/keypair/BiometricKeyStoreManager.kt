@@ -3,20 +3,26 @@ package com.prongbang.biometriccram.keypair
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.prongbang.biometriccram.exception.GenerateKeyPairException
 import com.prongbang.biometriccram.exception.PrivateKeyNotFoundException
 import com.prongbang.biometriccram.exception.PublicKeyNotFoundException
 import java.security.*
+import java.security.spec.ECGenParameterSpec
 import javax.inject.Inject
 
+/**
+ * Reference: https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec#example:-nist-p-256-ec-key-pair-for-signingverification-using-ecdsa
+ */
 class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
 
     @RequiresApi(Build.VERSION_CODES.N)
     override fun getPublicKey(key: String): PublicKey {
         return try {
-            val keyPair = getKeyPair(key)
-            keyPair.public
+            val keyStore = getKeyStore()
+            val publicKey = keyStore.getCertificate(key).publicKey
+            publicKey
         } catch (e: Exception) {
             throw PublicKeyNotFoundException(message = e.cause?.message)
         }
@@ -26,31 +32,37 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
     override fun getPrivateKey(key: String): PrivateKey {
         return try {
             val keyStore = getKeyStore()
-            val privateKey = keyStore?.getKey(key, null) as? PrivateKey
-            privateKey ?: let {
-                getKeyPair(key)
-                val keyStore2 = getKeyStore()
-                val privateKey2 = keyStore2?.getKey(key, null) as PrivateKey
-                privateKey2
-            }
+            val privateKey = keyStore.getKey(key, null) as PrivateKey
+            privateKey
         } catch (e: Exception) {
             throw PrivateKeyNotFoundException(message = e.cause?.message)
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
-    private fun getKeyPair(key: String): KeyPair {
+    /**
+     * How to use:
+     *  val keyPair = getKeyPair(key)
+     *  val publicKey = keyPair.public
+     *  val privateKey = keyPair.private
+     */
+    override fun getKeyPair(key: String): KeyPair {
         return try {
-            val purposes = KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            val purposes = KeyProperties.PURPOSE_SIGN
             val builder = KeyGenParameterSpec.Builder(key, purposes).apply {
-                setBlockModes(KeyProperties.BLOCK_MODE_ECB)
-                setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+                setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
+                setDigests(
+                    KeyProperties.DIGEST_SHA256,
+                    KeyProperties.DIGEST_SHA384,
+                    KeyProperties.DIGEST_SHA512
+                )
                 setUserAuthenticationRequired(true)
-                setInvalidatedByBiometricEnrollment(false)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    setInvalidatedByBiometricEnrollment(false)
+                }
             }
 
             val keyPairGenerator = KeyPairGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_RSA,
+                KeyProperties.KEY_ALGORITHM_EC,
                 ANDROID_KEY_STORE
             )
             keyPairGenerator.initialize(builder.build())
@@ -60,9 +72,9 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
         }
     }
 
-    private fun getKeyStore(): KeyStore? {
+    override fun getKeyStore(): KeyStore {
         val keyStore = KeyStore.getInstance(ANDROID_KEY_STORE)
-        keyStore?.load(null)
+        keyStore.load(null)
 
         return keyStore
     }

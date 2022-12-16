@@ -1,10 +1,11 @@
 package com.prongbang.biometriccram
 
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import javax.inject.Inject
 
 interface BiometricPromptInfoBuilder {
-    fun build(info: Biometric.PromptInfo):  BiometricPrompt.PromptInfo
+    fun build(info: Biometric.PromptInfo): BiometricPrompt.PromptInfo
 }
 
 class BiometricPromptInfoBuilderImpl @Inject constructor() : BiometricPromptInfoBuilder {
@@ -13,10 +14,10 @@ class BiometricPromptInfoBuilderImpl @Inject constructor() : BiometricPromptInfo
         return BiometricPrompt.PromptInfo.Builder()
             .setTitle(info.title)
             .setSubtitle(info.subtitle)
-            .setNegativeButtonText(info.negativeButton)
             .setDescription(info.description)
+            .setNegativeButtonText(info.negativeButton)
             .setConfirmationRequired(false)
-            .setDeviceCredentialAllowed(false)
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .build()
     }
 
