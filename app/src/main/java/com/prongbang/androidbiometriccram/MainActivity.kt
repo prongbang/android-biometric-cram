@@ -10,6 +10,7 @@ import com.prongbang.biometriccram.Biometric
 import com.prongbang.biometriccram.SignatureBiometricPromptManager
 import com.prongbang.biometriccram.key.KeyStoreAliasKey
 import com.prongbang.biometriccram.signature.BiometricSignature
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,11 +30,13 @@ class MainActivity : AppCompatActivity() {
         negativeButton = "CANCEL"
     )
 
-    private val biometricSignature = object : BiometricSignature {
-        override fun challengeText(): String {
+    private val biometricSignature = object : BiometricSignature() {
+        override fun challenge(): String {
             // TODO Step: 2.1 Request
             return myServer.challengeRequest(userId)
         }
+
+        override fun nonce(): String = UUID.randomUUID().toString()
     }
 
     private val registrationBiometricPromptManager by lazy {
@@ -98,12 +101,13 @@ class MainActivity : AppCompatActivity() {
                                     val signature = biometric.signature
                                     Log.i("SUCCEEDED", "signature: $signature")
 
-                                    // TODO Step: 2.1 Request & Verify
+                                    // TODO Step: 2.2 Verify
                                     signature?.let {
                                         val response = myServer.challengeVerify(
                                             userId,
                                             it.signature,
-                                            it.challenge
+                                            it.challenge,
+                                            it.nonce,
                                         )
                                         Log.i("SUCCEEDED", "verify: $response")
 

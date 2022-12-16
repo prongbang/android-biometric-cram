@@ -1,5 +1,6 @@
 package com.prongbang.biometriccram.signature
 
-interface BiometricSignature {
-    fun challengeText(): String
+abstract class BiometricSignature {
+    abstract fun challenge(): String
+    open fun nonce(): String = ""
 }

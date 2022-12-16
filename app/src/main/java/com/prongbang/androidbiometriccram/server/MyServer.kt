@@ -22,11 +22,12 @@ class MyServer {
         return challengeMap[userId] ?: ""
     }
 
-    fun challengeVerify(userId: Int, signature: String, challenge: String): Boolean {
+    fun challengeVerify(userId: Int, signature: String, challenge: String, nonce: String): Boolean {
         val publicKey = KeyPairManager.toPublicKey(publicKeyMap[userId]!!)
         val sign = Signature.getInstance("SHA256withECDSA")
+        val textToSign = challenge + nonce
         sign.initVerify(publicKey)
-        sign.update(challenge.toByteArray(Charsets.UTF_8))
+        sign.update(textToSign.toByteArray(Charsets.UTF_8))
         val respByte = Base64.decode(signature, Base64.NO_WRAP or Base64.URL_SAFE)
         val verify = sign.verify(respByte)
         val matchChallenge = challengeMap[userId] == challenge

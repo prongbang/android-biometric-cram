@@ -94,12 +94,7 @@ class SignatureBiometricPromptManager @Inject constructor(
                 try {
                     val cryptoObject = result.cryptoObject
                     if (biometricSignature == null) {
-                        val privateKey = keyStoreManager.getPrivateKey(keyStoreAliasKey.key())
                         val publicKey = keyStoreManager.getPublicKey(keyStoreAliasKey.key())
-                        Log.i("privateKey", "$privateKey")
-                        Log.i("publicKey", "$publicKey")
-                        Log.i("privateKey.encoded", "${privateKey.encoded}")
-                        Log.i("publicKey.encoded", "${publicKey.encoded}")
                         val keyPair = Biometric.KeyPair(publicKey = publicKey.toBase64())
 
                         onResult?.callback(
@@ -107,8 +102,13 @@ class SignatureBiometricPromptManager @Inject constructor(
                         )
                     } else {
                         val signature = cryptoObject?.signature
-                        val challengeText = biometricSignature.challengeText()
-                        signature?.update(challengeText.toByteArray(Charsets.UTF_8))
+                        val challengeText = biometricSignature.challenge()
+                        val nonce = biometricSignature.nonce()
+                        var textToSign = challengeText
+                        if (nonce.isNotEmpty()) {
+                            textToSign += nonce
+                        }
+                        signature?.update(textToSign.toByteArray(Charsets.UTF_8))
                         val signatureBytes = signature?.sign()
                         val signed = Base64.encodeToString(
                             signatureBytes,
@@ -119,7 +119,8 @@ class SignatureBiometricPromptManager @Inject constructor(
                             Biometric(
                                 signature = Biometric.Signature(
                                     signature = signed,
-                                    challenge = challengeText
+                                    challenge = challengeText,
+                                    nonce = nonce,
                                 ),
                                 status = Biometric.Status.SUCCEEDED
                             )
