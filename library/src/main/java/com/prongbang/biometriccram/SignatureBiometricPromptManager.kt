@@ -8,8 +8,6 @@ import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
-import com.prongbang.biometriccram.signature.BiometricKeyStoreSignature
-import com.prongbang.biometriccram.signature.KeyStoreSignature
 import com.prongbang.biometriccram.executor.ExecutorCreator
 import com.prongbang.biometriccram.executor.MainExecutorCreator
 import com.prongbang.biometriccram.extensions.toBase64
@@ -17,7 +15,9 @@ import com.prongbang.biometriccram.key.BiometricKeyStoreAliasKey
 import com.prongbang.biometriccram.key.KeyStoreAliasKey
 import com.prongbang.biometriccram.keypair.BiometricKeyStoreManager
 import com.prongbang.biometriccram.keypair.KeyStoreManager
+import com.prongbang.biometriccram.signature.BiometricKeyStoreSignature
 import com.prongbang.biometriccram.signature.BiometricSignature
+import com.prongbang.biometriccram.signature.KeyStoreSignature
 import java.security.KeyStoreException
 import java.security.SignatureException
 import javax.inject.Inject
@@ -95,7 +95,8 @@ class SignatureBiometricPromptManager @Inject constructor(
                     val cryptoObject = result.cryptoObject
                     if (biometricSignature == null) {
                         val publicKey = keyStoreManager.getPublicKey(keyStoreAliasKey.key())
-                        val keyPair = Biometric.KeyPair(publicKey = publicKey.toBase64())
+                        val publicKeyHex = publicKey.toBase64()
+                        val keyPair = Biometric.KeyPair(publicKey = publicKeyHex)
 
                         onResult?.callback(
                             Biometric(keyPair = keyPair, status = Biometric.Status.SUCCEEDED)
@@ -110,15 +111,13 @@ class SignatureBiometricPromptManager @Inject constructor(
                         }
                         signature?.update(textToSign.toByteArray(Charsets.UTF_8))
                         val signatureBytes = signature?.sign()
-                        val signed = Base64.encodeToString(
-                            signatureBytes,
-                            Base64.URL_SAFE or Base64.NO_WRAP
-                        )
+                        val signed = Base64.encodeToString(signatureBytes, Base64.DEFAULT)
 
                         onResult?.callback(
                             Biometric(
                                 signature = Biometric.Signature(
-                                    signature = signed,
+                                    signature = signed.replace("\r", "")
+                                        .replace("\n", ""),
                                     challenge = challengeText,
                                     nonce = nonce,
                                 ),
