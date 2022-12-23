@@ -3,6 +3,7 @@ package com.prongbang.biometricsignature.keypair
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.prongbang.biometricsignature.exception.GenerateKeyPairException
 import com.prongbang.biometricsignature.exception.PrivateKeyNotFoundException
@@ -31,9 +32,15 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
     override fun getPrivateKey(key: String): PrivateKey {
         return try {
             val keyStore = getKeyStore()
-            val privateKey = keyStore.getKey(key, null) as PrivateKey
-            privateKey
+            val privateKey = keyStore.getKey(key, null) as? PrivateKey
+            privateKey ?: let {
+                getKeyPair(key)
+                val keyStore2 = getKeyStore()
+                val privateKey2 = keyStore2.getKey(key, null) as PrivateKey
+                privateKey2
+            }
         } catch (e: Exception) {
+            Log.e("BiometricKeyStoreManager", e.message ?: "")
             throw PrivateKeyNotFoundException(message = e.cause?.message)
         }
     }

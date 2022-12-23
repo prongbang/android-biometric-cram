@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     )
     private var nonce: String = ""
 
-    private val payloadBiometricSignature = object : BiometricSignature() {
+    private val signBiometricSignature = object : BiometricSignature() {
         override fun payload(): String {
             // TODO Step: 2.1 Request
             val challenge = myServer.challengeRequest(userId)
@@ -48,11 +48,18 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private val signatureBiometricPromptManager by lazy {
+    private val signBiometricPromptManager by lazy {
+        SignatureBiometricPromptManager.newInstance(
+            this@MainActivity,
+            biometricSignature = signBiometricSignature,
+        )
+    }
+
+    private val verifyBiometricPromptManager by lazy {
         SignatureBiometricPromptManager.newInstance(
             this@MainActivity,
             keyStoreAliasKey = customKeyStoreAliasKey,
-            biometricSignature = payloadBiometricSignature,
+            biometricSignature = signBiometricSignature,
         )
     }
 
@@ -68,7 +75,8 @@ class MainActivity : AppCompatActivity() {
 
             // TODO Step: 1 Registration
             registrationButton.setOnClickListener {
-                registrationBiometricPromptManager.authenticate(
+
+                registrationBiometricPromptManager.createKeyPair(
                     promptInfo,
                     object : SignatureBiometricPromptManager.Result {
                         override fun callback(biometric: Biometric) {
@@ -92,11 +100,11 @@ class MainActivity : AppCompatActivity() {
                     })
             }
 
-            // TODO Step: 2 Sign & Verify
-            verifyButton.setOnClickListener {
+            // TODO Step: 2 Sign & Verify on API
+            signButton.setOnClickListener {
 
                 // TODO Step: 2.1 Sign
-                signatureBiometricPromptManager.authenticate(
+                signBiometricPromptManager.sign(
                     promptInfo,
                     object : SignatureBiometricPromptManager.Result {
                         override fun callback(biometric: Biometric) {

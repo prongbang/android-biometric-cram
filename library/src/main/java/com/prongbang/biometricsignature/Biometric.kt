@@ -1,6 +1,7 @@
 package com.prongbang.biometricsignature
 
 data class Biometric(
+    val verify: Boolean = false,
     val signature: Signature? = null,
     val keyPair: KeyPair? = null,
     val status: Status

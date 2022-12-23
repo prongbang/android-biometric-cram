@@ -1,7 +1,6 @@
 package com.prongbang.biometricsignature
 
 import android.os.Build
-import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.biometric.BiometricManager
@@ -17,16 +16,15 @@ import com.prongbang.biometricsignature.keypair.KeyStoreManager
 import com.prongbang.biometricsignature.signature.BiometricKeyStoreSignature
 import com.prongbang.biometricsignature.signature.BiometricSignature
 import com.prongbang.biometricsignature.signature.KeyStoreSignature
-import java.security.KeyStoreException
-import java.security.SignatureException
+import java.security.Signature
 import javax.inject.Inject
 
 class SignatureBiometricPromptManager @Inject constructor(
-    activity: FragmentActivity,
-    biometricSignature: BiometricSignature?,
-    keyStoreManager: KeyStoreManager,
-    keyStoreAliasKey: KeyStoreAliasKey,
-    executorCreator: ExecutorCreator,
+    private val activity: FragmentActivity,
+    private val biometricSignature: BiometricSignature?,
+    private val keyStoreManager: KeyStoreManager,
+    private val keyStoreAliasKey: KeyStoreAliasKey,
+    private val executorCreator: ExecutorCreator,
     private val keyStoreSignature: KeyStoreSignature,
     private val biometricPromptInfoBuilder: BiometricPromptInfoBuilder,
 ) : SignatureBiometricManager {
@@ -35,12 +33,6 @@ class SignatureBiometricPromptManager @Inject constructor(
         fun callback(biometric: Biometric)
     }
 
-    private var onResult: Result? = null
-    private val biometricPrompt = BiometricPrompt(
-        activity,
-        executorCreator.create(activity.applicationContext),
-        BiometricAuthenticationHandler(biometricSignature, keyStoreManager, keyStoreAliasKey),
-    )
     private val biometricManager = BiometricManager.from(activity.applicationContext)
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.N)
@@ -57,79 +49,172 @@ class SignatureBiometricPromptManager @Inject constructor(
                 || canAuthentication == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
     }
 
-    override fun authenticate(info: Biometric.PromptInfo, onResult: Result) {
-        this.onResult = onResult
+    override fun createKeyPair(info: Biometric.PromptInfo, onResult: Result) {
         try {
             val bioPromptCrypto = BiometricPrompt.CryptoObject(
                 keyStoreSignature.getSignature()
             )
             val promptInfo = biometricPromptInfoBuilder.build(info)
 
-            biometricPrompt.authenticate(promptInfo, bioPromptCrypto)
+            val keyPairBiometricPrompt = BiometricPrompt(
+                activity,
+                executorCreator.create(activity.applicationContext),
+                KeyPairBiometricAuthenticationHandler(keyStoreManager, keyStoreAliasKey, onResult),
+            )
+            keyPairBiometricPrompt.authenticate(promptInfo, bioPromptCrypto)
         } catch (e: Exception) {
             onResult.callback(Biometric(status = Biometric.Status.ERROR))
         }
     }
 
-    inner class BiometricAuthenticationHandler(
-        private val biometricSignature: BiometricSignature?,
+    override fun sign(info: Biometric.PromptInfo, onResult: Result) {
+        try {
+            val bioPromptCrypto = BiometricPrompt.CryptoObject(
+                keyStoreSignature.getSignature()
+            )
+            val promptInfo = biometricPromptInfoBuilder.build(info)
+
+            val signBiometricPrompt = BiometricPrompt(
+                activity,
+                executorCreator.create(activity.applicationContext),
+                SignBiometricAuthenticationHandler(biometricSignature, onResult),
+            )
+            signBiometricPrompt.authenticate(promptInfo, bioPromptCrypto)
+        } catch (e: Exception) {
+            onResult.callback(Biometric(status = Biometric.Status.ERROR))
+        }
+    }
+
+    override fun verify(info: Biometric.PromptInfo, onResult: Result) {
+        try {
+            val bioPromptCrypto = BiometricPrompt.CryptoObject(
+                keyStoreSignature.getSignature()
+            )
+            val promptInfo = biometricPromptInfoBuilder.build(info)
+
+            val verifyBiometricPrompt = BiometricPrompt(
+                activity,
+                executorCreator.create(activity.applicationContext),
+                VerifyBiometricAuthenticationHandler(
+                    biometricSignature,
+                    keyStoreManager,
+                    keyStoreAliasKey,
+                    onResult
+                ),
+            )
+            verifyBiometricPrompt.authenticate(promptInfo, bioPromptCrypto)
+        } catch (e: Exception) {
+            onResult.callback(Biometric(status = Biometric.Status.ERROR))
+        }
+    }
+
+    inner class KeyPairBiometricAuthenticationHandler(
         private val keyStoreManager: KeyStoreManager,
         private val keyStoreAliasKey: KeyStoreAliasKey,
+        private var onKeyPairResult: Result,
     ) : BiometricPrompt.AuthenticationCallback() {
 
         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-            val result = when (errorCode) {
-                BiometricPrompt.ERROR_NEGATIVE_BUTTON -> Biometric.Status.CANCEL
-                BiometricPrompt.ERROR_USER_CANCELED -> Biometric.Status.CANCEL
-                else -> Biometric.Status.ERROR
-            }
-            onResult?.callback(Biometric(status = result))
+            val result = getAuthenticationError(errorCode)
+            onKeyPairResult.callback(Biometric(status = result))
         }
 
         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
             try {
-                try {
-                    val cryptoObject = result.cryptoObject
-                    if (biometricSignature == null) {
-                        // Generate KeyPair
-                        val publicKey = keyStoreManager.getPublicKey(keyStoreAliasKey.key())
-                        val publicKeyHex = publicKey.toBase64()
-                        val keyPair = Biometric.KeyPair(publicKey = publicKeyHex)
+                // Generate KeyPair
+                val publicKey = keyStoreManager.getPublicKey(keyStoreAliasKey.key())
+                val publicKeyHex = publicKey.toBase64()
+                val keyPair = Biometric.KeyPair(publicKey = publicKeyHex)
 
-                        onResult?.callback(
-                            Biometric(keyPair = keyPair, status = Biometric.Status.SUCCEEDED)
-                        )
-                    } else {
-                        // Sign payload
-                        val signature = cryptoObject?.signature
-                        val payload = biometricSignature.payload()
-                        signature?.update(payload.toByteArray(Charsets.UTF_8))
-                        val signatureBytes = signature?.sign()
-                        val signed = Base64.encodeToString(signatureBytes, Base64.DEFAULT)
-                            .replace("\r", "")
-                            .replace("\n", "")
-
-                        onResult?.callback(
-                            Biometric(
-                                signature = Biometric.Signature(
-                                    signature = signed,
-                                    payload = payload,
-                                ),
-                                status = Biometric.Status.SUCCEEDED
-                            )
-                        )
-                    }
-                } catch (e: KeyPermanentlyInvalidatedException) {
-                    onResult?.callback(Biometric(status = Biometric.Status.ERROR))
-                } catch (e: KeyStoreException) {
-                    onResult?.callback(Biometric(status = Biometric.Status.ERROR))
-                } catch (e: SignatureException) {
-                    onResult?.callback(Biometric(status = Biometric.Status.ERROR))
-                }
+                onKeyPairResult.callback(
+                    Biometric(keyPair = keyPair, status = Biometric.Status.SUCCEEDED)
+                )
             } catch (e: Exception) {
-                onResult?.callback(Biometric(status = Biometric.Status.ERROR))
+                onKeyPairResult.callback(Biometric(status = Biometric.Status.ERROR))
             }
         }
+    }
+
+    inner class SignBiometricAuthenticationHandler(
+        private val biometricSignature: BiometricSignature?,
+        private val onSignResult: Result,
+    ) : BiometricPrompt.AuthenticationCallback() {
+
+        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+            val result = getAuthenticationError(errorCode)
+            onSignResult.callback(Biometric(status = result))
+        }
+
+        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+            try {
+                // Sign payload
+                val cryptoObject = result.cryptoObject
+                val signature = cryptoObject?.signature
+                val payload = biometricSignature?.payload() ?: ""
+                signature?.update(payload.toByteArray(Charsets.UTF_8))
+                val signatureBytes = signature?.sign()
+                val signed = Base64.encodeToString(signatureBytes, Base64.DEFAULT)
+                    .replace("\r", "")
+                    .replace("\n", "")
+
+                onSignResult.callback(
+                    Biometric(
+                        signature = Biometric.Signature(
+                            signature = signed,
+                            payload = payload,
+                        ),
+                        status = Biometric.Status.SUCCEEDED
+                    )
+                )
+            } catch (e: Exception) {
+                onSignResult.callback(Biometric(status = Biometric.Status.ERROR))
+            }
+        }
+    }
+
+    inner class VerifyBiometricAuthenticationHandler(
+        private val biometricSignature: BiometricSignature?,
+        private val keyStoreManager: KeyStoreManager,
+        private val keyStoreAliasKey: KeyStoreAliasKey,
+        private val onVerifyResult: Result,
+    ) : BiometricPrompt.AuthenticationCallback() {
+
+        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+            val result = getAuthenticationError(errorCode)
+            onVerifyResult.callback(Biometric(status = result))
+        }
+
+        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+            try {
+                // Verify signature
+                val publicKey = keyStoreManager.getPublicKey(keyStoreAliasKey.key())
+                val sign = Signature.getInstance("SHA256withECDSA")
+                val signature = biometricSignature?.signature() ?: ""
+                val textToSign = biometricSignature?.payload() ?: ""
+                sign.initVerify(publicKey)
+                sign.update(textToSign.toByteArray(Charsets.UTF_8))
+                val respByte = Base64.decode(signature, Base64.DEFAULT)
+                val verify = sign.verify(respByte)
+
+                onVerifyResult.callback(
+                    Biometric(
+                        verify = verify,
+                        status = Biometric.Status.SUCCEEDED
+                    )
+                )
+            } catch (e: Exception) {
+                onVerifyResult.callback(Biometric(status = Biometric.Status.ERROR))
+            }
+        }
+    }
+
+    private fun getAuthenticationError(errorCode: Int): Biometric.Status {
+        val result = when (errorCode) {
+            BiometricPrompt.ERROR_NEGATIVE_BUTTON -> Biometric.Status.CANCEL
+            BiometricPrompt.ERROR_USER_CANCELED -> Biometric.Status.CANCEL
+            else -> Biometric.Status.ERROR
+        }
+        return result
     }
 
     companion object {

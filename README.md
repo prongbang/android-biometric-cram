@@ -29,7 +29,7 @@ dependencyResolutionManagement {
 - `app/build.gradle`
 
 ```groovy
-implementation 'com.github.prongbang:android-biometric-signature:1.0.0'
+implementation 'com.github.prongbang:android-biometric-signature:1.0.1'
 ```
 
 ## How to use
@@ -67,6 +67,17 @@ private val registrationBiometricPromptManager by lazy {
 private val signatureBiometricPromptManager by lazy {
     SignatureBiometricPromptManager.newInstance(
         this@MainActivity,
+        biometricSignature = payloadBiometricSignature,
+    )
+}
+```
+
+- Create field `verifyBiometricPromptManager`
+
+```kotlin
+private val verifyBiometricPromptManager by lazy {
+    SignatureBiometricPromptManager.newInstance(
+        this@MainActivity,
         keyStoreAliasKey = customKeyStoreAliasKey,
         biometricSignature = payloadBiometricSignature,
     )
@@ -87,7 +98,7 @@ private val promptInfo = Biometric.PromptInfo(
 - Generate KeyPair with Biometric
 
 ```kotlin
-registrationBiometricPromptManager.authenticate(
+registrationBiometricPromptManager.createKeyPair(
     promptInfo,
     object : SignatureBiometricPromptManager.Result {
         override fun callback(biometric: Biometric) {
@@ -110,7 +121,7 @@ registrationBiometricPromptManager.authenticate(
 - Sign with Biometric
 
 ```kotlin
-signatureBiometricPromptManager.authenticate(
+signatureBiometricPromptManager.sign(
     promptInfo,
     object : SignatureBiometricPromptManager.Result {
         override fun callback(biometric: Biometric) {
@@ -118,6 +129,29 @@ signatureBiometricPromptManager.authenticate(
                 Biometric.Status.SUCCEEDED -> {
                     val signature = biometric.signature
                     Log.i("SUCCEEDED", "signature: $signature")
+                }
+                Biometric.Status.ERROR -> {
+                    Log.i("ERROR", "ERROR")
+                }
+                Biometric.Status.CANCEL -> {
+                    Log.i("CANCEL", "CANCEL")
+                }
+            }
+        }
+    })
+```
+
+- Verify with Biometric
+
+```kotlin
+verifyBiometricPromptManager.verify(
+    promptInfo,
+    object : SignatureBiometricPromptManager.Result {
+        override fun callback(biometric: Biometric) {
+            when (biometric.status) {
+                Biometric.Status.SUCCEEDED -> {
+                    val verify = biometric.verify
+                    Log.i("SUCCEEDED", "verify: $verify")
                 }
                 Biometric.Status.ERROR -> {
                     Log.i("ERROR", "ERROR")

@@ -51,6 +51,7 @@ dependencies {
     implementation "com.google.dagger:hilt-android:2.42"
     kapt "com.google.dagger:hilt-compiler:2.42"
 
+    //implementation 'com.github.prongbang:android-biometric-signature:1.0.0'
     implementation project(":library")
 
     testImplementation 'junit:junit:4.13.2'
