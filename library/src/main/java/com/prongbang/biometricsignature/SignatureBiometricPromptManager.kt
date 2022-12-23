@@ -3,7 +3,6 @@ package com.prongbang.biometricsignature
 import android.os.Build
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
-import android.util.Log
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -68,7 +67,6 @@ class SignatureBiometricPromptManager @Inject constructor(
 
             biometricPrompt.authenticate(promptInfo, bioPromptCrypto)
         } catch (e: Exception) {
-            Log.e("authenticate", "${e.message}")
             onResult.callback(Biometric(status = Biometric.Status.ERROR))
         }
     }
@@ -85,7 +83,6 @@ class SignatureBiometricPromptManager @Inject constructor(
                 BiometricPrompt.ERROR_USER_CANCELED -> Biometric.Status.CANCEL
                 else -> Biometric.Status.ERROR
             }
-            Log.e("onAuthenticationError", "$errString")
             onResult?.callback(Biometric(status = result))
         }
 
@@ -94,6 +91,7 @@ class SignatureBiometricPromptManager @Inject constructor(
                 try {
                     val cryptoObject = result.cryptoObject
                     if (biometricSignature == null) {
+                        // Generate KeyPair
                         val publicKey = keyStoreManager.getPublicKey(keyStoreAliasKey.key())
                         val publicKeyHex = publicKey.toBase64()
                         val keyPair = Biometric.KeyPair(publicKey = publicKeyHex)
@@ -102,24 +100,20 @@ class SignatureBiometricPromptManager @Inject constructor(
                             Biometric(keyPair = keyPair, status = Biometric.Status.SUCCEEDED)
                         )
                     } else {
+                        // Sign payload
                         val signature = cryptoObject?.signature
-                        val challengeText = biometricSignature.challenge()
-                        val nonce = biometricSignature.nonce()
-                        var textToSign = challengeText
-                        if (nonce.isNotEmpty()) {
-                            textToSign += nonce
-                        }
-                        signature?.update(textToSign.toByteArray(Charsets.UTF_8))
+                        val payload = biometricSignature.payload()
+                        signature?.update(payload.toByteArray(Charsets.UTF_8))
                         val signatureBytes = signature?.sign()
                         val signed = Base64.encodeToString(signatureBytes, Base64.DEFAULT)
+                            .replace("\r", "")
+                            .replace("\n", "")
 
                         onResult?.callback(
                             Biometric(
                                 signature = Biometric.Signature(
-                                    signature = signed.replace("\r", "")
-                                        .replace("\n", ""),
-                                    challenge = challengeText,
-                                    nonce = nonce,
+                                    signature = signed,
+                                    payload = payload,
                                 ),
                                 status = Biometric.Status.SUCCEEDED
                             )
@@ -133,7 +127,6 @@ class SignatureBiometricPromptManager @Inject constructor(
                     onResult?.callback(Biometric(status = Biometric.Status.ERROR))
                 }
             } catch (e: Exception) {
-                Log.e("onAuthenticationSucceeded", "${e.message}")
                 onResult?.callback(Biometric(status = Biometric.Status.ERROR))
             }
         }

@@ -8,8 +8,7 @@ data class Biometric(
 
     data class Signature(
         val signature: String = "",
-        val challenge: String = "",
-        val nonce: String = "",
+        val payload: String = "",
     )
 
     data class KeyPair(

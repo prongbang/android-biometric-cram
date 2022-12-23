@@ -29,14 +29,16 @@ class MainActivity : AppCompatActivity() {
         description = "description here",
         negativeButton = "CANCEL"
     )
+    private var nonce: String = ""
 
     private val biometricSignature = object : BiometricSignature() {
-        override fun challenge(): String {
+        override fun payload(): String {
             // TODO Step: 2.1 Request
-            return myServer.challengeRequest(userId)
-        }
+            val challenge = myServer.challengeRequest(userId)
+            nonce = UUID.randomUUID().toString()
 
-        override fun nonce(): String = UUID.randomUUID().toString()
+            return challenge + nonce
+        }
     }
 
     private val registrationBiometricPromptManager by lazy {
@@ -75,7 +77,7 @@ class MainActivity : AppCompatActivity() {
                                     val publicKey = biometric.keyPair?.publicKey
                                     Log.i("SUCCEEDED", "PublicKey: $publicKey")
 
-                                    // TODO Step: 2.2 Verify
+                                    // TODO Step: 1.1 Registration
                                     val response = myServer.registration(userId, publicKey)
                                     Log.i("SUCCEEDED", "Registration: $response")
                                 }
@@ -90,8 +92,10 @@ class MainActivity : AppCompatActivity() {
                     })
             }
 
-            // TODO Step: 2 Request & Verify
+            // TODO Step: 2 Sign & Verify
             verifyButton.setOnClickListener {
+
+                // TODO Step: 2.1 Sign
                 signatureBiometricPromptManager.authenticate(
                     promptInfo,
                     object : SignatureBiometricPromptManager.Result {
@@ -106,8 +110,8 @@ class MainActivity : AppCompatActivity() {
                                         val response = myServer.challengeVerify(
                                             userId,
                                             it.signature,
-                                            it.challenge,
-                                            it.nonce,
+                                            it.payload,
+                                            nonce
                                         )
                                         Log.i("SUCCEEDED", "verify: $response")
 
