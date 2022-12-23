@@ -10,7 +10,7 @@ afterEvaluate {
             release(MavenPublication) {
                 from components.release
                 groupId = 'com.github.prongbang'
-                artifactId = 'android-biometric-cram'
+                artifactId = 'android-biometric-signature'
                 version = '0.0.1'
             }
         }

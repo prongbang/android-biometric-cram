@@ -12,6 +12,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "android-biometric-cram"
+rootProject.name = "android-biometric-signature"
 include ':app'
 include ':library'
