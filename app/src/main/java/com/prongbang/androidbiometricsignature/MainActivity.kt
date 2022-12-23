@@ -20,8 +20,8 @@ class MainActivity : AppCompatActivity() {
 
     private val userId = 1
 
-    private val cramKeyStoreAliasKey = object : KeyStoreAliasKey {
-        override fun key(): String = "com.prongbang.androidbiometriccram.key"
+    private val customKeyStoreAliasKey = object : KeyStoreAliasKey {
+        override fun key(): String = "com.prongbang.signx.seckey"
     }
     private val promptInfo = Biometric.PromptInfo(
         title = "BIOMETRIC",
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     )
     private var nonce: String = ""
 
-    private val biometricSignature = object : BiometricSignature() {
+    private val payloadBiometricSignature = object : BiometricSignature() {
         override fun payload(): String {
             // TODO Step: 2.1 Request
             val challenge = myServer.challengeRequest(userId)
@@ -44,15 +44,15 @@ class MainActivity : AppCompatActivity() {
     private val registrationBiometricPromptManager by lazy {
         SignatureBiometricPromptManager.newInstance(
             this@MainActivity,
-            keyStoreAliasKey = cramKeyStoreAliasKey
+            keyStoreAliasKey = customKeyStoreAliasKey
         )
     }
 
     private val signatureBiometricPromptManager by lazy {
         SignatureBiometricPromptManager.newInstance(
             this@MainActivity,
-            keyStoreAliasKey = cramKeyStoreAliasKey,
-            biometricSignature = biometricSignature,
+            keyStoreAliasKey = customKeyStoreAliasKey,
+            biometricSignature = payloadBiometricSignature,
         )
     }
 
