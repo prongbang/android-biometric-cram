@@ -210,8 +210,11 @@ class SignatureBiometricPromptManager @Inject constructor(
 
     private fun getAuthenticationError(errorCode: Int): Biometric.Status {
         val result = when (errorCode) {
-            BiometricPrompt.ERROR_NEGATIVE_BUTTON -> Biometric.Status.CANCEL
+            BiometricPrompt.ERROR_CANCELED,
+            BiometricPrompt.ERROR_NEGATIVE_BUTTON,
             BiometricPrompt.ERROR_USER_CANCELED -> Biometric.Status.CANCEL
+            BiometricPrompt.ERROR_LOCKOUT -> Biometric.Status.LOCKOUT
+            BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> Biometric.Status.LOCKOUT_PERMANENT
             else -> Biometric.Status.ERROR
         }
         return result

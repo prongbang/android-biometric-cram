@@ -27,6 +27,8 @@ data class Biometric(
     enum class Status {
         SUCCEEDED,
         ERROR,
+        LOCKOUT,
+        LOCKOUT_PERMANENT,
         CANCEL
     }
 }
