@@ -95,6 +95,12 @@ class MainActivity : AppCompatActivity() {
                                 Biometric.Status.CANCEL -> {
                                     Log.i("CANCEL", "CANCEL")
                                 }
+                                Biometric.Status.LOCKOUT -> {
+                                    Log.i("LOCKOUT", "LOCKOUT")
+                                }
+                                Biometric.Status.LOCKOUT_PERMANENT -> {
+                                    Log.i("LOCKOUT", "LOCKOUT_PERMANENT")
+                                }
                             }
                         }
                     })
@@ -135,6 +141,12 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 Biometric.Status.CANCEL -> {
                                     Log.i("CANCEL", "CANCEL")
+                                }
+                                Biometric.Status.LOCKOUT -> {
+                                    Log.i("LOCKOUT", "LOCKOUT")
+                                }
+                                Biometric.Status.LOCKOUT_PERMANENT -> {
+                                    Log.i("LOCKOUT", "LOCKOUT_PERMANENT")
                                 }
                             }
                         }

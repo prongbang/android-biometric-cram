@@ -29,7 +29,7 @@ dependencyResolutionManagement {
 - `app/build.gradle`
 
 ```groovy
-implementation 'com.github.prongbang:android-biometric-signature:1.0.2'
+implementation 'com.github.prongbang:android-biometric-signature:1.0.3'
 ```
 
 ## How to use
