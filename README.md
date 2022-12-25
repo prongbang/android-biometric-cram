@@ -50,40 +50,6 @@ private val customKeyStoreAliasKey = object : KeyStoreAliasKey {
 }
 ```
 
-- Create field `registrationBiometricPromptManager`
-
-```kotlin
-private val registrationBiometricPromptManager by lazy {
-    SignatureBiometricPromptManager.newInstance(
-        this@MainActivity,
-        keyStoreAliasKey = customKeyStoreAliasKey
-    )
-}
-```
-
-- Create field `signatureBiometricPromptManager`
-
-```kotlin
-private val signatureBiometricPromptManager by lazy {
-    SignatureBiometricPromptManager.newInstance(
-        this@MainActivity,
-        biometricSignature = payloadBiometricSignature,
-    )
-}
-```
-
-- Create field `verifyBiometricPromptManager`
-
-```kotlin
-private val verifyBiometricPromptManager by lazy {
-    SignatureBiometricPromptManager.newInstance(
-        this@MainActivity,
-        keyStoreAliasKey = customKeyStoreAliasKey,
-        biometricSignature = payloadBiometricSignature,
-    )
-}
-```
-
 - Create field `promptInfo`
 
 ```kotlin
@@ -98,6 +64,12 @@ private val promptInfo = Biometric.PromptInfo(
 - Generate KeyPair with Biometric
 
 ```kotlin
+private val registrationBiometricPromptManager by lazy {
+    SignatureBiometricPromptManager.newInstance(
+        this@MainActivity,
+        keyStoreAliasKey = customKeyStoreAliasKey
+    )
+}
 registrationBiometricPromptManager.createKeyPair(
     promptInfo,
     object : SignatureBiometricPromptManager.Result {
@@ -121,6 +93,13 @@ registrationBiometricPromptManager.createKeyPair(
 - Sign with Biometric
 
 ```kotlin
+private val signatureBiometricPromptManager by lazy {
+    SignatureBiometricPromptManager.newInstance(
+        this@MainActivity,
+        keyStoreAliasKey = customKeyStoreAliasKey,
+        biometricSignature = payloadBiometricSignature,
+    )
+}
 signatureBiometricPromptManager.sign(
     promptInfo,
     object : SignatureBiometricPromptManager.Result {
@@ -144,6 +123,13 @@ signatureBiometricPromptManager.sign(
 - Verify with Biometric
 
 ```kotlin
+private val verifyBiometricPromptManager by lazy {
+    SignatureBiometricPromptManager.newInstance(
+        this@MainActivity,
+        keyStoreAliasKey = customKeyStoreAliasKey,
+        biometricSignature = payloadBiometricSignature,
+    )
+}
 verifyBiometricPromptManager.verify(
     promptInfo,
     object : SignatureBiometricPromptManager.Result {
