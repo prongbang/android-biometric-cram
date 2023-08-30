@@ -1,7 +1,12 @@
 # android-biometric-signature
 
-Generate key pair and signing (NIST P-256 EC key pair using ECDSA) using Local Authentication for Android
+Generate key pair and signing (NIST P-256 EC key pair using ECDSA) using Local Authentication for Android.
+
 https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec#example:-nist-p-256-ec-key-pair-for-signingverification-using-ecdsa
+
+Signature
+
+https://developer.android.com/reference/java/security/Signature
 
 [![](https://jitpack.io/v/prongbang/android-biometric-signature.svg)](https://jitpack.io/#prongbang/android-biometric-signature)
 
