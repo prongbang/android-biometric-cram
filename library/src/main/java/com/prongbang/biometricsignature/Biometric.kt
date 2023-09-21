@@ -4,7 +4,8 @@ data class Biometric(
     val verify: Boolean = false,
     val signature: Signature? = null,
     val keyPair: KeyPair? = null,
-    val status: Status
+    val status: Status,
+    val error: String? = null,
 ) {
 
     data class Signature(

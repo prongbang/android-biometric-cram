@@ -2,6 +2,7 @@ package com.prongbang.biometricsignature
 
 import android.os.Build
 import android.util.Base64
+import android.util.Log
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -51,6 +52,10 @@ class SignatureBiometricPromptManager @Inject constructor(
 
     override fun createKeyPair(info: Biometric.PromptInfo, onResult: Result) {
         try {
+            // Generate keyPair
+            keyStoreManager.generateKeyPair(keyStoreAliasKey.key())
+
+            // Authenticate
             val bioPromptCrypto = BiometricPrompt.CryptoObject(
                 keyStoreSignature.getSignature()
             )
@@ -63,7 +68,7 @@ class SignatureBiometricPromptManager @Inject constructor(
             )
             keyPairBiometricPrompt.authenticate(promptInfo, bioPromptCrypto)
         } catch (e: Exception) {
-            onResult.callback(Biometric(status = Biometric.Status.ERROR))
+            onResult.callback(Biometric(status = Biometric.Status.ERROR, error = e.message))
         }
     }
 
@@ -81,7 +86,7 @@ class SignatureBiometricPromptManager @Inject constructor(
             )
             signBiometricPrompt.authenticate(promptInfo, bioPromptCrypto)
         } catch (e: Exception) {
-            onResult.callback(Biometric(status = Biometric.Status.ERROR))
+            onResult.callback(Biometric(status = Biometric.Status.ERROR, error = e.message))
         }
     }
 
@@ -104,7 +109,7 @@ class SignatureBiometricPromptManager @Inject constructor(
             )
             verifyBiometricPrompt.authenticate(promptInfo, bioPromptCrypto)
         } catch (e: Exception) {
-            onResult.callback(Biometric(status = Biometric.Status.ERROR))
+            onResult.callback(Biometric(status = Biometric.Status.ERROR, error = e.message))
         }
     }
 
@@ -116,21 +121,25 @@ class SignatureBiometricPromptManager @Inject constructor(
 
         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
             val result = getAuthenticationError(errorCode)
-            onKeyPairResult.callback(Biometric(status = result))
+            onKeyPairResult.callback(Biometric(status = result, error = errString.toString()))
         }
 
         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
             try {
                 // Generate KeyPair
                 val publicKey = keyStoreManager.getPublicKey(keyStoreAliasKey.key())
-                val publicKeyHex = publicKey.toBase64()
-                val keyPair = Biometric.KeyPair(publicKey = publicKeyHex)
+                val keyPair = Biometric.KeyPair(publicKey = publicKey.toBase64())
 
                 onKeyPairResult.callback(
                     Biometric(keyPair = keyPair, status = Biometric.Status.SUCCEEDED)
                 )
             } catch (e: Exception) {
-                onKeyPairResult.callback(Biometric(status = Biometric.Status.ERROR))
+                onKeyPairResult.callback(
+                    Biometric(
+                        status = Biometric.Status.ERROR,
+                        error = e.message
+                    )
+                )
             }
         }
     }
@@ -142,7 +151,7 @@ class SignatureBiometricPromptManager @Inject constructor(
 
         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
             val result = getAuthenticationError(errorCode)
-            onSignResult.callback(Biometric(status = result))
+            onSignResult.callback(Biometric(status = result, error = errString.toString()))
         }
 
         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -167,7 +176,7 @@ class SignatureBiometricPromptManager @Inject constructor(
                     )
                 )
             } catch (e: Exception) {
-                onSignResult.callback(Biometric(status = Biometric.Status.ERROR))
+                onSignResult.callback(Biometric(status = Biometric.Status.ERROR, error = e.message))
             }
         }
     }
@@ -181,7 +190,7 @@ class SignatureBiometricPromptManager @Inject constructor(
 
         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
             val result = getAuthenticationError(errorCode)
-            onVerifyResult.callback(Biometric(status = result))
+            onVerifyResult.callback(Biometric(status = result, error = errString.toString()))
         }
 
         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -203,7 +212,13 @@ class SignatureBiometricPromptManager @Inject constructor(
                     )
                 )
             } catch (e: Exception) {
-                onVerifyResult.callback(Biometric(status = Biometric.Status.ERROR))
+                Log.i("SignatureBiometricPromptManager", "${e.message}")
+                onVerifyResult.callback(
+                    Biometric(
+                        status = Biometric.Status.ERROR,
+                        error = e.message
+                    )
+                )
             }
         }
     }

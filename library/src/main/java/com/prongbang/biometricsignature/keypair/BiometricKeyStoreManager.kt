@@ -35,7 +35,7 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
             val keyStore = getKeyStore()
             val privateKey = keyStore.getKey(key, null) as? PrivateKey
             privateKey ?: let {
-                getKeyPair(key)
+                generateKeyPair(key)
                 val keyStore2 = getKeyStore()
                 val privateKey2 = keyStore2.getKey(key, null) as PrivateKey
                 privateKey2
@@ -52,8 +52,19 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
      *  val publicKey = keyPair.public
      *  val privateKey = keyPair.private
      */
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun getKeyPair(key: String): KeyPair {
+        val privateKey = getPrivateKey(key)
+        val publicKey = getPublicKey(key)
+        return KeyPair(publicKey, privateKey)
+    }
+
+    override fun generateKeyPair(key: String): KeyPair {
         return try {
+            // Delete keypair
+            deleteKeyPair(key)
+
+            // Generate keypair
             val purposes = KeyProperties.PURPOSE_SIGN
             val builder = KeyGenParameterSpec.Builder(key, purposes).apply {
                 setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))

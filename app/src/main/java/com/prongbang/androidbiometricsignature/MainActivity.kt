@@ -90,16 +90,16 @@ class MainActivity : AppCompatActivity() {
                                     Log.i("SUCCEEDED", "Registration: $response")
                                 }
                                 Biometric.Status.ERROR -> {
-                                    Log.i("ERROR", "ERROR")
+                                    Log.i("ERROR", "ERROR ${biometric.error}")
                                 }
                                 Biometric.Status.CANCEL -> {
-                                    Log.i("CANCEL", "CANCEL")
+                                    Log.i("CANCEL", "CANCEL ${biometric.error}")
                                 }
                                 Biometric.Status.LOCKOUT -> {
-                                    Log.i("LOCKOUT", "LOCKOUT")
+                                    Log.i("LOCKOUT", "LOCKOUT ${biometric.error}")
                                 }
                                 Biometric.Status.LOCKOUT_PERMANENT -> {
-                                    Log.i("LOCKOUT", "LOCKOUT_PERMANENT")
+                                    Log.i("LOCKOUT", "LOCKOUT_PERMANENT ${biometric.error}")
                                 }
                             }
                         }
@@ -137,16 +137,16 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                                 Biometric.Status.ERROR -> {
-                                    Log.i("ERROR", "ERROR")
+                                    Log.i("ERROR", "ERROR ${biometric.error}")
                                 }
                                 Biometric.Status.CANCEL -> {
-                                    Log.i("CANCEL", "CANCEL")
+                                    Log.i("CANCEL", "CANCEL ${biometric.error}")
                                 }
                                 Biometric.Status.LOCKOUT -> {
-                                    Log.i("LOCKOUT", "LOCKOUT")
+                                    Log.i("LOCKOUT", "LOCKOUT ${biometric.error}")
                                 }
                                 Biometric.Status.LOCKOUT_PERMANENT -> {
-                                    Log.i("LOCKOUT", "LOCKOUT_PERMANENT")
+                                    Log.i("LOCKOUT", "LOCKOUT_PERMANENT ${biometric.error}")
                                 }
                             }
                         }
