@@ -78,6 +78,25 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
         }
     }
 
+    override fun deleteKeyPair(key: String): Boolean {
+        try {
+            // Load the Android Keystore
+            val keyStore = getKeyStore()
+
+            // Check if the keypair with the specified alias exists
+            if (keyStore.containsAlias(key)) {
+                keyStore.deleteEntry(key)
+                Log.i("BiometricKeyStoreManager", "Keypair with alias deleted successfully.")
+            } else {
+                Log.i("BiometricKeyStoreManager", "Keypair with alias does not exist.")
+            }
+            return true
+        } catch (e: KeyStoreException) {
+            Log.e("BiometricKeyStoreManager", e.message ?: "")
+        }
+        return false
+    }
+
     override fun getKeyStore(): KeyStore {
         val keyStore = KeyStore.getInstance(ANDROID_KEY_STORE)
         keyStore.load(null)

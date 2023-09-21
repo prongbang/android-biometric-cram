@@ -9,5 +9,6 @@ interface KeyStoreManager {
     fun getPublicKey(key: String): PublicKey
     fun getPrivateKey(key: String): PrivateKey
     fun getKeyPair(key: String): KeyPair
+    fun deleteKeyPair(key: String): Boolean
     fun getKeyStore(): KeyStore
 }
