@@ -24,6 +24,7 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
             val publicKey = keyStore.getCertificate(key).publicKey
             publicKey
         } catch (e: Exception) {
+            Log.e("BiometricKeyStoreManager", e.message ?: "")
             throw PublicKeyNotFoundException(message = e.cause?.message)
         }
     }

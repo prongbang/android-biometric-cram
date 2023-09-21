@@ -1,3 +1,3 @@
 package com.prongbang.biometricsignature.exception
 
-class PrivateKeyNotFoundException(message: String?) : Throwable(message = message)
+class PrivateKeyNotFoundException(message: String?) : Exception(message = message)
