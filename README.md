@@ -10,6 +10,8 @@ https://developer.android.com/reference/java/security/Signature
 
 [![](https://jitpack.io/v/prongbang/android-biometric-signature.svg)](https://jitpack.io/#prongbang/android-biometric-signature)
 
+- iOS: [https://github.com/prongbang/SignatureBiometricSwift](https://github.com/prongbang/SignatureBiometricSwift)
+
 ## Setup
 
 - `build.gradle`
