@@ -10,8 +10,9 @@ class BiometricKeyStoreSignature @Inject constructor(
     private val keyStoreManager: KeyStoreManager
 ) : KeyStoreSignature {
 
-    override fun getSignature(): Signature {
-        val privateKey = keyStoreManager.getPrivateKey(keyStoreAliasKey.key())
+    override fun getSignature(invalidatedByBiometricEnrollment: Boolean): Signature {
+        val privateKey =
+            keyStoreManager.getPrivateKey(keyStoreAliasKey.key(), invalidatedByBiometricEnrollment)
         val signature = Signature.getInstance("SHA256withECDSA")
         signature.initSign(privateKey)
         return signature

@@ -23,6 +23,7 @@ data class Biometric(
         val subtitle: String = "",
         val description: String = "",
         val negativeButton: String = "",
+        val invalidatedByBiometricEnrollment: Boolean = false
     )
 
     enum class Status {

@@ -18,12 +18,13 @@ class MainActivity : AppCompatActivity() {
     private val customKeyStoreAliasKey = object : KeyStoreAliasKey {
         override fun key(): String = "com.prongbang.signx.seckey"
     }
-    
+
     private val promptInfo = Biometric.PromptInfo(
         title = "BIOMETRIC",
         subtitle = "Please scan biometric to Login Application",
         description = "description here",
-        negativeButton = "CANCEL"
+        negativeButton = "CANCEL",
+        invalidatedByBiometricEnrollment = true
     )
 
     private val signBiometricSignature = object : BiometricSignature() {
@@ -72,15 +73,19 @@ class MainActivity : AppCompatActivity() {
                                     val publicKey = biometric.keyPair?.publicKey
                                     Log.i("SUCCEEDED", "PublicKey: $publicKey")
                                 }
+
                                 Biometric.Status.ERROR -> {
                                     Log.i("ERROR", "ERROR ${biometric.error}")
                                 }
+
                                 Biometric.Status.CANCEL -> {
                                     Log.i("CANCEL", "CANCEL ${biometric.error}")
                                 }
+
                                 Biometric.Status.LOCKOUT -> {
                                     Log.i("LOCKOUT", "LOCKOUT ${biometric.error}")
                                 }
+
                                 Biometric.Status.LOCKOUT_PERMANENT -> {
                                     Log.i("LOCKOUT", "LOCKOUT_PERMANENT ${biometric.error}")
                                 }
@@ -99,15 +104,19 @@ class MainActivity : AppCompatActivity() {
                                     val signature = biometric.signature
                                     Log.i("SUCCEEDED", "signature: $signature")
                                 }
+
                                 Biometric.Status.ERROR -> {
                                     Log.i("ERROR", "ERROR ${biometric.error}")
                                 }
+
                                 Biometric.Status.CANCEL -> {
                                     Log.i("CANCEL", "CANCEL ${biometric.error}")
                                 }
+
                                 Biometric.Status.LOCKOUT -> {
                                     Log.i("LOCKOUT", "LOCKOUT ${biometric.error}")
                                 }
+
                                 Biometric.Status.LOCKOUT_PERMANENT -> {
                                     Log.i("LOCKOUT", "LOCKOUT_PERMANENT ${biometric.error}")
                                 }

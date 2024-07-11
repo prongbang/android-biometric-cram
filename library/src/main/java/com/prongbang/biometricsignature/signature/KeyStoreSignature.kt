@@ -3,5 +3,5 @@ package com.prongbang.biometricsignature.signature
 import java.security.Signature
 
 interface KeyStoreSignature {
-    fun getSignature(): Signature
+    fun getSignature(invalidatedByBiometricEnrollment: Boolean): Signature
 }

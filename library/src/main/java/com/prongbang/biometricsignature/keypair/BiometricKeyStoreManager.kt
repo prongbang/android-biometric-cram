@@ -2,10 +2,12 @@ package com.prongbang.biometricsignature.keypair
 
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.prongbang.biometricsignature.exception.GenerateKeyPairException
+import com.prongbang.biometricsignature.exception.KeyPairPermanentlyInvalidatedException
 import com.prongbang.biometricsignature.exception.PrivateKeyNotFoundException
 import com.prongbang.biometricsignature.exception.PublicKeyNotFoundException
 import java.security.*
@@ -30,12 +32,12 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
-    override fun getPrivateKey(key: String): PrivateKey {
+    override fun getPrivateKey(key: String, invalidatedByBiometricEnrollment: Boolean): PrivateKey {
         return try {
             val keyStore = getKeyStore()
             val privateKey = keyStore.getKey(key, null) as? PrivateKey
             privateKey ?: let {
-                generateKeyPair(key)
+                generateKeyPair(key, invalidatedByBiometricEnrollment)
                 val keyStore2 = getKeyStore()
                 val privateKey2 = keyStore2.getKey(key, null) as PrivateKey
                 privateKey2
@@ -53,13 +55,13 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
      *  val privateKey = keyPair.private
      */
     @RequiresApi(Build.VERSION_CODES.N)
-    override fun getKeyPair(key: String): KeyPair {
-        val privateKey = getPrivateKey(key)
+    override fun getKeyPair(key: String, invalidatedByBiometricEnrollment: Boolean): KeyPair {
+        val privateKey = getPrivateKey(key, invalidatedByBiometricEnrollment)
         val publicKey = getPublicKey(key)
         return KeyPair(publicKey, privateKey)
     }
 
-    override fun generateKeyPair(key: String): KeyPair {
+    override fun generateKeyPair(key: String, invalidatedByBiometricEnrollment: Boolean): KeyPair {
         return try {
             // Delete keypair
             deleteKeyPair(key)
@@ -75,7 +77,7 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
                 )
                 setUserAuthenticationRequired(true)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    setInvalidatedByBiometricEnrollment(false)
+                    setInvalidatedByBiometricEnrollment(invalidatedByBiometricEnrollment)
                 }
             }
 
@@ -85,6 +87,8 @@ class BiometricKeyStoreManager @Inject constructor() : KeyStoreManager {
             )
             keyPairGenerator.initialize(builder.build())
             keyPairGenerator.generateKeyPair()
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            throw KeyPairPermanentlyInvalidatedException(message = e.cause?.message)
         } catch (e: Exception) {
             throw GenerateKeyPairException(message = e.cause?.message)
         }
