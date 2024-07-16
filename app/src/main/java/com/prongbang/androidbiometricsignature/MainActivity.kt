@@ -1,19 +1,19 @@
 package com.prongbang.androidbiometricsignature
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import com.prongbang.androidbiometricsignature.databinding.ActivityMainBinding
 import com.prongbang.biometricsignature.Biometric
 import com.prongbang.biometricsignature.SignatureBiometricPromptManager
 import com.prongbang.biometricsignature.key.KeyStoreAliasKey
 import com.prongbang.biometricsignature.signature.BiometricSignature
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
+
+    var signature: String = ""
 
     private val customKeyStoreAliasKey = object : KeyStoreAliasKey {
         override fun key(): String = "com.prongbang.signx.seckey"
@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private val signBiometricSignature = object : BiometricSignature() {
         override fun payload(): String = "hello"
+        override fun signature(): String = signature
     }
 
     private val registrationBiometricPromptManager by lazy {
@@ -42,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         SignatureBiometricPromptManager.newInstance(
             this@MainActivity,
             biometricSignature = signBiometricSignature,
+            keyStoreAliasKey = customKeyStoreAliasKey
         )
     }
 
@@ -101,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                         override fun callback(biometric: Biometric) {
                             when (biometric.status) {
                                 Biometric.Status.SUCCEEDED -> {
-                                    val signature = biometric.signature
+                                    signature = biometric.signature?.signature ?: ""
                                     Log.i("SUCCEEDED", "signature: $signature")
                                 }
 
@@ -123,6 +125,42 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     })
+            }
+
+            verifyButton.setOnClickListener {
+                verifyBiometricPromptManager.verify(
+                    promptInfo,
+                    object : SignatureBiometricPromptManager.Result {
+                        override fun callback(biometric: Biometric) {
+                            when (biometric.status) {
+                                Biometric.Status.SUCCEEDED -> {
+                                    val verify = biometric.verify
+                                    Log.i("SUCCEEDED", "verify: $verify")
+                                }
+
+                                Biometric.Status.ERROR -> {
+                                    Log.i("ERROR", "ERROR ${biometric.error}")
+                                }
+
+                                Biometric.Status.CANCEL -> {
+                                    Log.i("CANCEL", "CANCEL ${biometric.error}")
+                                }
+
+                                Biometric.Status.LOCKOUT -> {
+                                    Log.i("LOCKOUT", "LOCKOUT ${biometric.error}")
+                                }
+
+                                Biometric.Status.LOCKOUT_PERMANENT -> {
+                                    Log.i("LOCKOUT", "LOCKOUT_PERMANENT ${biometric.error}")
+                                }
+                            }
+                        }
+                    })
+            }
+
+            checkBiometricChangeButton.setOnClickListener {
+                val result = verifyBiometricPromptManager.isBiometricChanged()
+                Log.i("SUCCEEDED", "changed: $result")
             }
         }
     }

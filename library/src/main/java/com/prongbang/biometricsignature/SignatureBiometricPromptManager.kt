@@ -1,6 +1,7 @@
 package com.prongbang.biometricsignature
 
 import android.os.Build
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
 import android.util.Log
 import androidx.annotation.ChecksSdkIntAtLeast
@@ -17,7 +18,9 @@ import com.prongbang.biometricsignature.keypair.KeyStoreManager
 import com.prongbang.biometricsignature.signature.BiometricKeyStoreSignature
 import com.prongbang.biometricsignature.signature.BiometricSignature
 import com.prongbang.biometricsignature.signature.KeyStoreSignature
+import java.security.KeyStore
 import java.security.Signature
+import java.security.UnrecoverableKeyException
 import javax.inject.Inject
 
 class SignatureBiometricPromptManager @Inject constructor(
@@ -48,6 +51,38 @@ class SignatureBiometricPromptManager @Inject constructor(
             biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
         return canAuthentication == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
                 || canAuthentication == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
+    }
+
+    override fun isBiometricChanged(): Boolean {
+        return try {
+            val keyStore = keyStoreManager.getKeyStore()
+            val keyAlias = keyStoreAliasKey.key()
+            val entry = keyStore.getEntry(keyAlias, null) as? KeyStore.PrivateKeyEntry
+            if (entry == null) {
+                true // Key doesn't exist, assume biometric has changed
+            } else {
+                val signature = Signature.getInstance("SHA256withECDSA")
+                signature.initSign(entry.privateKey)
+
+                // If we get here, the key is still valid
+                false
+            }
+        } catch (e: Exception) {
+            when (e) {
+                is KeyPermanentlyInvalidatedException,
+                is UnrecoverableKeyException -> {
+                    // These exceptions indicate that the key is no longer valid,
+                    // likely due to biometric changes
+                    true
+                }
+
+                else -> {
+                    // Other exceptions might not be related to biometric changes
+                    // You might want to log these for debugging
+                    false
+                }
+            }
+        }
     }
 
     override fun createKeyPair(info: Biometric.PromptInfo, onResult: Result) {
